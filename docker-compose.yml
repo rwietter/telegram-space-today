@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redis
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+
+  redis:
+    image: redis:6.2.1-alpine
+    ports:
+      - "6379:6379"
