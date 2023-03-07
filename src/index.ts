@@ -1,6 +1,5 @@
 import './config'
 import { bot, Context } from './http';
-import cron from 'node-cron';
 
 type APOD = {
 	hdurl: string;
