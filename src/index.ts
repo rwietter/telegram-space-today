@@ -1,67 +1,117 @@
-import './config'
-import { bot, Context } from './http';
+import "./config/env";
+import { api, bot, Context } from "./http";
 
-type APOD = {
-	hdurl: string;
-	url: string;
-	title: string;
-	copyright: string;
-	date: string;
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN,
+  optionsSuccessStatus: 200,
 };
 
-const cache = new Map();
+type AstronomyPicture = {
+  hdUrl: string;
+  url: string;
+  title: string;
+  copyright: string;
+  date: string;
+};
 
-const APOD_URL = `https://api.nasa.gov/planetary/apod?api_key=${process.env.NASA_API_KEY}`;
+type Cache = {
+  picture: AstronomyPicture | null;
+};
 
-const fetchApod = async (ctx: Context) => {
-	try {
-		if (cache.has('apod')) {
-			const { hdurl, url, title, copyright, date }: APOD = cache.get('apod');
+const cache: Cache = {
+  picture: null,
+};
 
-			console.log(`\nCache size: ${cache.size}`)
+const getAstronomyPicture = async (): Promise<AstronomyPicture | null> => {
+  try {
+    const response = await api.get(
+      `https://api.nasa.gov/planetary/apod?api_key=${process.env.NASA_API_KEY}`
+    );
 
-			if (!url) throw new Error('Invalid image');
+    if (response.status !== 200) {
+      console.log(
+        "🚀 ~ file: index.ts:27 ~ getAstronomyPicture ~ response:",
+        response.data
+      );
+      throw new Error("Could not fetch image");
+    }
 
-			return ctx.sendPhoto(hdurl || url, {
-				caption: `${title} - ${date} \n\nCopyright: ${copyright ? `${copyright}` : ''}`,
-			});
-		}
+    return response.data;
+  } catch (error: any) {
+    console.log(
+      "🚀 ~ file: index.ts:30 ~ getAstronomyPicture ~ error:",
+      error.message
+    );
+    return null;
+  }
+};
 
-		console.log('FETCHING IMAGE...')
+const fetchAstronomyPicture = async (ctx: Context) => {
+  try {
+    if (cache.picture !== null) {
+      const { hdUrl, url, title, copyright, date }: AstronomyPicture =
+        cache.picture;
 
-		const response = await fetch(APOD_URL);
+      if (!url) throw new Error("Invalid cache");
 
-		const data = await response.json();
+      console.log("🚀 ~ FETCHING IMAGE FROM CACHE:", cache);
 
-		if (!data) {
-			throw new Error('Could not fetch image');
-		}
+      const header = `${title} - ${date}`;
+      const footer = `${copyright ? `\n\nCopyright: ${copyright}` : ""}`;
 
-		const { hdurl, url, title, copyright, date }: APOD = data;
+      return ctx.sendPhoto(hdUrl || url, {
+        caption: `${header} ${footer}`,
+      });
+    }
 
-		cache.set('apod', data);
+    const data = await getAstronomyPicture();
 
-		if (!url) throw new Error('Invalid image');
+		console.log("🚀 ~ FETCHING IMAGE FROM API");
 
-		ctx.sendPhoto(hdurl || url, {
-			caption: `${title} - ${date} \n\nCopyright: ${copyright ? `${copyright}` : ''}`,
-		});
+    if (data === null) {
+      throw new Error("Could not fetch image");
+    }
 
-	} catch (error) {
-		console.error(error);
-		return ctx.reply('Could not fetch image');
-	}
-}
+    const { hdUrl, url, title, copyright, date }: AstronomyPicture = data;
 
-const helpMsg = `Command reference:
+    cache.picture = {
+      hdUrl,
+      copyright,
+      date,
+      title,
+      url,
+    };
+
+    if (!url) throw new Error("Invalid image");
+
+    ctx.sendPhoto(hdUrl || url, {
+      caption: `${title} - ${date} \n\nCopyright: ${
+        copyright ? `${copyright}` : ""
+      }`,
+    });
+  } catch (error) {
+    console.error(error);
+    return ctx.reply("Could not fetch image");
+  }
+};
+
+const commands = `Command reference:
 /help - Show this message
 /apod - NASA's Astronomy Picture of the Day
 `;
 
-bot.command('help', async (ctx) => {
-	await ctx.telegram.sendMessage(ctx.chat.id, helpMsg);
+bot.command("help", async (ctx) => {
+  await ctx.telegram.sendMessage(ctx.chat.id, commands);
 });
 
-bot.command('apod', fetchApod);
+bot.command("apod", fetchAstronomyPicture);
 
-bot.launch().catch(console.log);
+bot
+  .launch()
+  .then(() => {
+    console.log("Bot started");
+  })
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
