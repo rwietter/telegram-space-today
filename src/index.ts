@@ -1,11 +1,6 @@
 import "./config/env";
 import { api, bot, Context } from "./http";
 
-const corsOptions = {
-  origin: process.env.CORS_ORIGIN,
-  optionsSuccessStatus: 200,
-};
-
 type AstronomyPicture = {
   hdUrl: string;
   url: string;
