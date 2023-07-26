@@ -7,7 +7,7 @@ AstroBr Bot é um bot para o Telegram que permite visualizar as imagens da NASA 
 ### Pré-requisitos
 
 - [ ] Telegram instalado no seu dispositivo
-- [ ] Um conta no Telegram
+- [ ] Uma conta no Telegram
 
 Se você não tem uma conta no Telegram, você pode criar uma [aqui](https://telegram.org/).
 
