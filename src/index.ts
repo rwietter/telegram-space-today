@@ -28,7 +28,7 @@ const getAstronomyPicture = async (): Promise<AstronomyPicture | null> => {
         "🚀 ~ file: index.ts:27 ~ getAstronomyPicture ~ response:",
         response.data
       );
-      throw new Error("Could not fetch image");
+      return null;
     }
 
     return response.data;
@@ -47,24 +47,26 @@ const fetchAstronomyPicture = async (ctx: Context) => {
       const { hdUrl, url, title, copyright, date }: AstronomyPicture =
         cache.picture;
 
-      if (!url) throw new Error("Invalid cache");
+      if (!url && !hdUrl) return;
 
       console.log("🚀 ~ FETCHING IMAGE FROM CACHE:", cache);
 
-      const header = `${title} - ${date}`;
-      const footer = `${copyright ? `\n\nCopyright: ${copyright}` : ""}`;
-
       return ctx.sendPhoto(hdUrl || url, {
-        caption: `${header} ${footer}`,
+        caption: `<a href="${url}">${title}</a> — ${date}`,
+        parse_mode: "HTML",
       });
     }
 
     const data = await getAstronomyPicture();
 
-		console.log("🚀 ~ FETCHING IMAGE FROM API");
+    console.log("🚀 ~ FETCHING IMAGE FROM API");
 
     if (data === null) {
-      throw new Error("Could not fetch image");
+      console.log(
+        "🚀 ~ file: index.ts:67 ~ Could not fetch image ~ data:",
+        data
+      );
+      return;
     }
 
     const { hdUrl, url, title, copyright, date }: AstronomyPicture = data;
@@ -77,15 +79,15 @@ const fetchAstronomyPicture = async (ctx: Context) => {
       url,
     };
 
-    if (!url) throw new Error("Invalid image");
-
-    ctx.sendPhoto(hdUrl || url, {
-      caption: `${title} - ${date} \n\nCopyright: ${
-        copyright ? `${copyright}` : ""
-      }`,
+    return ctx.sendPhoto(hdUrl || url, {
+      caption: `<a href="${url}">${title}</a> — ${date}`,
+      parse_mode: "HTML",
     });
   } catch (error) {
-    console.error(error);
+    console.log(
+      "🚀 ~ file: index.ts:89 ~ fetchAstronomyPicture ~ error:",
+      error
+    );
     return ctx.reply("Could not fetch image");
   }
 };
@@ -100,6 +102,11 @@ bot.command("help", async (ctx) => {
 });
 
 bot.command("apod", fetchAstronomyPicture);
+
+bot.command("start", async (ctx) => {
+  await ctx.telegram.sendMessage(ctx.chat.id, "Welcome to the bot!");
+  await ctx.telegram.sendMessage(ctx.chat.id, commands);
+});
 
 bot
   .launch()
