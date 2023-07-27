@@ -13,6 +13,7 @@ export const getPicture = async (): Promise<Picture | null> => {
 
     return response.data;
   } catch (error: any) {
+    console.log("🚀 ~ getPicture ~ catch:", error)
     return null;
   }
 };

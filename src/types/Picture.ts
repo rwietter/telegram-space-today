@@ -1,5 +1,5 @@
 export type Picture = {
-  hdUrl: string;
+  hdurl: string;
   url: string;
   title: string;
   copyright: string;
