@@ -3,14 +3,14 @@ import "./services/mongo";
 import cron from "node-cron";
 import { bot } from "./http";
 import { Chatlist } from "./model/schema";
-import { moonPhase } from "./lib/moonPhase";
-import { sendPicture } from "./lib";
-import { moonPhase } from "./lib/moonPhase";
+import { sendPicture, unsubscribeToReceiveApodEveryday, moonPhase } from "./lib";
 
 const commands = `Command reference:
 /help - Show this message
 /apod - NASA's Astronomy Picture of the Day
 /moon - Current moon phase
+/subscribe - Subscribe to receive the Astronomy Picture of the Day every day
+/unsubscribe - Unsubscribe to receive the Astronomy Picture of the Day every day
 `;
 
 bot.command("help", async (ctx) => {
@@ -24,24 +24,24 @@ bot.command("apod", async (ctx) => {
     return ctx.reply(data.message);
   }
 
-  const { url, title, date } = data;
+  const { url, title, date, explanation, hdurl } = data;
+
+  const hdImage = hdurl ? `<a href="${hdurl}">HD Version</a>` : "";
 
   return ctx.telegram.sendPhoto(ctx.chat.id, url, {
-    caption: `<a href="${url}">${title}</a> — ${date}`,
+    caption: `<a href="${url}">${title}</a> — ${date} \n\n${explanation} \n\n${hdImage}`,
     parse_mode: "HTML",
   });
 });
 
 bot.command("moon", moonPhase);
 
-bot.command('moon', moonPhase)
-
 bot.command("start", async (ctx) => {
   await ctx.telegram.sendMessage(ctx.chat.id, "Welcome to the bot!");
   await ctx.telegram.sendMessage(ctx.chat.id, commands);
 });
 
-bot.command("auto", async (ctx) => {
+bot.command("subscribe", async (ctx) => {
   try {
     const { id } = ctx.chat;
 
@@ -49,7 +49,7 @@ bot.command("auto", async (ctx) => {
 
     if (exists) {
       return ctx.reply(
-        "Hey! You already registered this group. If you want to unregister, use /autooff"
+        "Hey! You already registered. If you want to unsubscribe, use /unsubscribe"
       );
     }
 
@@ -69,6 +69,8 @@ bot.command("auto", async (ctx) => {
   }
 });
 
+bot.command("unsubscribe", unsubscribeToReceiveApodEveryday)
+
 const sendApodForAllGroups = async () => {
   try {
     const chatlists = await Chatlist.find();
@@ -82,11 +84,13 @@ const sendApodForAllGroups = async () => {
       return;
     }
 
-    const { url, title, date } = data;
+    const { url, title, date, explanation, hdurl } = data;
+
+    const hdImage = hdurl ? `<a href="${hdurl}">HD Version</a>` : "";
 
     for (const chat of chatlists) {
       await bot.telegram.sendPhoto(String(chat.chatId), url, {
-        caption: `<a href="${url}">${title}</a> — ${date}`,
+        caption: `<a href="${url}">${title}</a> — ${date} \n\n${explanation} \n\n${hdImage}`,
         parse_mode: "HTML",
       });
     }
