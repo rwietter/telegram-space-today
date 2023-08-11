@@ -1,14 +1,13 @@
-import { Context } from "telegraf";
 import { Picture } from "../types";
 import { getPicture } from "./fetchPicture";
 import { client } from "../services";
 
-const sendFromAPI = async (ctx: Context) => {
+const sendFromAPI = async () => {
   try {
     const data = await getPicture();
 
     if (data == null) {
-      return ctx.reply("Could not fetch image");
+      return new Error("Could not fetch image");
     }
 
     const { url, title, date }: Picture = data;
@@ -16,45 +15,45 @@ const sendFromAPI = async (ctx: Context) => {
     const TIME_TO_LIVE = 18000; // 5 hours
     await client.set("picture", JSON.stringify(data), "EX", TIME_TO_LIVE);
 
-    return ctx.sendPhoto(url, {
-      caption: `<a href="${url}">${title}</a> — ${date}`,
-      parse_mode: "HTML",
-    });
+    return { url, title, date }
   } catch (error) {
-    return ctx.reply("Sorry, we have a problem in Space Center Houston :(");
+    return new Error("Sorry, we have a problem in Space Center Houston :(");
   }
 };
 
-const sendFromCache = async (ctx: Context, cache: string) => {
+const sendFromCache = async (cache: string) => {
   try {
     const deserializeCache = await JSON.parse(cache);
 
     const { url, title, date }: Picture = deserializeCache;
 
-    if (!url) return;
+    if (!url) return new Error("Could not fetch image");
 
-    return ctx.sendPhoto(url, {
-      caption: `<a href="${url}">${title}</a> — ${date}`,
-      parse_mode: "HTML",
-    });
+    return { url, title, date }
   } catch (error) {
-    return ctx.reply("Sorry, something went wrong. Try again later.");
+    return new Error("Sorry, we have a problem in Space Center Houston :(");
   }
 }
 
-export const sendPicture = async (ctx: Context) => {
+type Data = {
+  url: string;
+  title: string;
+  date: string;
+}
+
+export const sendPicture = async (): Promise<Data | Error> => {
   try {
     const cache = await client.get("picture");
 
     if (!cache) {
       console.log("Cache miss. Fetching from API.");
-      return sendFromAPI(ctx);
+      return sendFromAPI();
     }
 
     console.log("Cache hit. Sending from cache.");
-    return sendFromCache(ctx, cache);
+    return sendFromCache(cache);
 
   } catch (error) {
-    return ctx.reply("Sorry, we have a server problem. Try again later.");
+    return new Error("Sorry, we have a problem in Space Center Houston :(");
   }
 };
