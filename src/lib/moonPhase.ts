@@ -12,19 +12,19 @@ function getCurrentMoonPosition() {
 
 const actualPhase = (currentMoonPosition: number): [string, string] => {
   const index = currentMoonPosition * 8 + 0.5;
-  const roundedIndex = Math.floor(index);
+  const roundedIndex = Math.floor(index) & 7;
 
   const unicodes = ["🌕", "🌔", "🌔", "🌒", "🌑", "🌒", "🌒", "🌔"];
 
   const phases = [
-    "Lua Nova",
-    "Lua Crescente",
-    "Quarto Crescente",
-    "Lua Gibosa",
-    "Lua Cheia",
-    "Lua Balsâmica",
-    "Quarto Minguante",
-    "Lua Minguante",
+    "New Moon", 
+    "Waxing Crescent", 
+    "First Quarter", 
+    "Waxing Gibbous", 
+    "Full Moon", 
+    "Waning Gibbous", 
+    "Last Quarter", 
+    "Waning Crescent"
   ];
 
   return [unicodes[roundedIndex], phases[roundedIndex]]; // roundedIndex & 7
@@ -39,12 +39,13 @@ export const moonPhase = (ctx: Context) => {
     const today = new Date();
 
     const date = today.toLocaleDateString(ctx.from?.language_code || "en", {
-      weekday: "long",
+      weekday: "short",
       year: "numeric",
-      month: "long",
+      month: "short",
       day: "numeric",
+      timeZone: "UTC",
     });
-    
+
     return ctx.reply(`
       ${unicode} ${phase} (${roundedposition}) \n📅 ${date}
     `);
