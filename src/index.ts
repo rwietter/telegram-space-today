@@ -3,7 +3,11 @@ import "./services/mongo";
 import cron from "node-cron";
 import { bot } from "./http";
 import { Chatlist } from "./model/schema";
-import { sendPicture, unsubscribeToReceiveApodEveryday, moonPhase } from "./lib";
+import {
+  sendPicture,
+  unsubscribeToReceiveApodEveryday,
+  moonPhase,
+} from "./lib";
 
 const commands = `Command reference:
 /help - Show this message
@@ -28,10 +32,19 @@ bot.command("apod", async (ctx) => {
 
   const hdImage = hdurl ? `<a href="${hdurl}">HD Version</a>` : "";
 
-  return ctx.telegram.sendPhoto(ctx.chat.id, url, {
-    caption: `<a href="${url}">${title}</a> — ${date} \n\n${explanation} \n\n${hdImage}`,
+  await ctx.telegram.sendMessage(
+    ctx.chat.id,
+    `${title} — ${date} \n\n${explanation}`,
+    {
+      parse_mode: "HTML",
+    }
+  );
+
+  await ctx.telegram.sendPhoto(ctx.chat.id, url, {
+    caption: hdImage,
     parse_mode: "HTML",
   });
+  return;
 });
 
 bot.command("moon", moonPhase);
@@ -69,7 +82,7 @@ bot.command("subscribe", async (ctx) => {
   }
 });
 
-bot.command("unsubscribe", unsubscribeToReceiveApodEveryday)
+bot.command("unsubscribe", unsubscribeToReceiveApodEveryday);
 
 const sendApodForAllGroups = async () => {
   try {
@@ -89,11 +102,20 @@ const sendApodForAllGroups = async () => {
     const hdImage = hdurl ? `<a href="${hdurl}">HD Version</a>` : "";
 
     for (const chat of chatlists) {
-      await bot.telegram.sendPhoto(String(chat.chatId), url, {
-        caption: `<a href="${url}">${title}</a> — ${date} \n\n${explanation} \n\n${hdImage}`,
+      await bot.telegram.sendMessage(
+        chat.id,
+        `${title} — ${date} \n\n${explanation}`,
+        {
+          parse_mode: "HTML",
+        }
+      );
+      
+      await bot.telegram.sendPhoto(chat.id, url, {
+        caption: hdImage,
         parse_mode: "HTML",
       });
     }
+    return;
   } catch (error) {
     console.error(error);
   }
@@ -111,4 +133,4 @@ bot
   .catch((error) => {
     console.error(error);
     process.exit(1);
-  })
+  });
