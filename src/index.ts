@@ -103,14 +103,14 @@ const sendApodForAllGroups = async () => {
 
     for (const chat of chatlists) {
       await bot.telegram.sendMessage(
-        chat.id,
+        chat.chatId,
         `${title} — ${date} \n\n${explanation}`,
         {
           parse_mode: "HTML",
         }
       );
       
-      await bot.telegram.sendPhoto(chat.id, url, {
+      await bot.telegram.sendPhoto(chat.chatId, url, {
         caption: hdImage,
         parse_mode: "HTML",
       });
